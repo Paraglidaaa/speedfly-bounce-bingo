@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -31,12 +32,6 @@
   color:#00ff00;
 }
 
-.close{
-  float:right;
-  cursor:pointer;
-  font-size:30px;
-}
-    
 body{
     background:#000814;
     font-family:'Press Start 2P', monospace;
@@ -51,7 +46,6 @@ body{
     border:5px solid #00ff00;
     border-radius:20px;
     padding:40px;
-
     box-shadow:
     0 0 15px #00ff00,
     0 0 40px #00ff00;
@@ -76,6 +70,7 @@ input,select{
     color:#00ff00;
     border:3px solid #00ff00;
     font-family:'Press Start 2P', monospace;
+    box-sizing:border-box;
 }
 
 button{
@@ -100,23 +95,12 @@ button{
     border-bottom:1px dotted #00ff00;
 }
 
-textarea{
-    width:100%;
-    padding:16px;
-    background:black;
-    color:#00ff00;
-    border:3px solid #00ff00;
-    font-family:'Press Start 2P', monospace;
-    resize:vertical;
-    box-sizing:border-box;
-}
-    
 </style>
 </head>
 
 <body>
 
-  <div id="welcomeModal" class="modal" style="display:block;">
+<div id="welcomeModal" class="modal" style="display:block;">
 
   <div class="modal-content">
 
@@ -142,21 +126,14 @@ textarea{
 
 <h1>Speedfly Bounce Bingo</h1>
 
-<label>Name</label> <input id="name" type="text" placeholder="Enter name">
+<label>Name</label>
+<input id="name" type="text" placeholder="Enter name">
 
-<label>Comments </label>
-
-<textarea
-id="comment"
-placeholder="Why are you concerned?"
-rows="5"></textarea>
-
-<label>Reason</label> <select>
-
-<option>Risk Analysis</option>
-<option>Training Concerns</option>
-<option>Decision Making</option>
-<option>Wing Size</option>
+<label>Why are you concerned?</label>
+<select id="reason">
+  <option value="incompetence">Incompetence</option>
+  <option value="complacency">Complacency</option>
+  <option value="pushing too hard">Pushing too hard</option>
 </select>
 
 <button onclick="submitEntry()">
@@ -173,27 +150,7 @@ SUBMIT
 
 </div>
 
-<div id="commentModal" class="modal">
-
-  <div class="modal-content">
-
-```
-<span class="close" onclick="closeModal()">
-  &times;
-</span>
-
-<h2 id="modalName"></h2>
-
-<p id="modalComment"></p>
-```
-
-  </div>
-
-</div>
-
-</script>
-
-  <script type="module">
+<script type="module">
 
 import { initializeApp }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -222,10 +179,10 @@ const db = getFirestore(app);
 window.submitEntry = async function(){
 
   const name =
-    document.getElementById("name").value;
+    document.getElementById("name").value.trim();
 
-  const comment =
-    document.getElementById("comment").value;
+  const reason =
+    document.getElementById("reason").value;
 
   if(!name) return;
 
@@ -233,13 +190,13 @@ window.submitEntry = async function(){
     collection(db,"submissions"),
     {
       name,
-      comment,
+      reason,
       created: Date.now()
     }
   );
 
-  document.getElementById("name").value="";
-  document.getElementById("comment").value="";
+  document.getElementById("name").value = "";
+  document.getElementById("reason").value = "incompetence";
 
   loadLeaderboard();
 };
@@ -258,44 +215,41 @@ window.loadLeaderboard = async function(){
 
   const snap = await getDocs(q);
 
+  const counts = {};
+
   snap.forEach(doc=>{
 
     const data = doc.data();
 
-    const row =
-      document.createElement("div");
+    const name = data.name.trim();
 
-    row.className="row";
+    if(!counts[name]){
+      counts[name] = {
+        name,
+        count:0
+      };
+    }
 
-    row.innerHTML =
-      `<span>${data.name}</span>`;
-
-    row.onclick = ()=>{
-
-      document.getElementById(
-        "modalName"
-      ).innerText = data.name;
-
-      document.getElementById(
-        "modalComment"
-      ).innerText = data.comment;
-
-      document.getElementById(
-        "commentModal"
-      ).style.display="block";
-    };
-
-    board.appendChild(row);
+    counts[name].count++;
 
   });
 
-};
+  Object.values(counts)
+    .sort((a,b)=>b.count-a.count)
+    .forEach(person=>{
 
-window.closeModal = function(){
+      const row =
+        document.createElement("div");
 
-  document.getElementById(
-    "commentModal"
-  ).style.display="none";
+      row.className = "row";
+
+      row.innerHTML =
+        `<span>${person.name}</span>
+         <span>${person.count}</span>`;
+
+      board.appendChild(row);
+
+    });
 
 };
 
@@ -306,10 +260,11 @@ window.closeWelcomeModal = function(){
   ).style.display = "none";
 
 };
-    
+
 loadLeaderboard();
 
 </script>
 
 </body>
 </html>
+```
